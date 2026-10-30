@@ -10,7 +10,7 @@ import requests as raw_requests
 from sklearn.linear_model import LinearRegression
 
 # Base search URL template
-BASE_URL = "https://www.mudah.my/malaysia/all?q=civic&o={page}"
+BASE_URL = "https://www.mudah.my/malaysia/all?q=x70&o={page}"
 
 
 def fetch_page_soup(page_num: int) -> BeautifulSoup:
@@ -79,16 +79,16 @@ def parse_page_listings(soup: BeautifulSoup, page_num: int) -> list:
 
             price = prices[-1] if prices else None
 
-            # Extract Title containing 'civic'
+            # Extract Title containing 'x70'
             title = None
             for bline in back_lines:
-                if "civic" in bline.lower():
+                if "x70" in bline.lower():
                     title = bline
                     break
             if not title and back_lines:
                 title = back_lines[0]
 
-            if price and year and title and "civic" in title.lower():
+            if price and year and title and "x70" in title.lower():
                 records.append({
                     "page": page_num,
                     "title": title,
@@ -112,7 +112,7 @@ for p in range(1, max_pages + 1):
     print(f"Fetching Page {p}...")
     soup = fetch_page_soup(p)
     page_listings = parse_page_listings(soup, p)
-    print(f"  -> Captured {len(page_listings)} valid Civic listings.")
+    print(f"  -> Captured {len(page_listings)} valid x70 listings.")
     scraped_data.extend(page_listings)
     time.sleep(2)  # Respectful delay between requests
 
@@ -121,7 +121,7 @@ df = pd.DataFrame(scraped_data)
 if df.empty:
     raise RuntimeError("No data extracted. Verify network access and website response.")
 
-# Exclude high-value trim outliers (e.g., Civic Type R > RM 190,000) for standard regression modeling
+# Exclude high-value trim outliers (e.g., x70 Type R > RM 190,000) for standard regression modeling
 df_std = df[df["price_rm"] < 190000].copy()
 
 # ==========================================
@@ -177,7 +177,7 @@ plt.plot(
 )
 
 plt.title(
-    f"Honda Civic: Price vs. Mileage (Mudah.my Scraped Data, N={len(df)})",
+    f"Honda x70: Price vs. Mileage (Mudah.my Scraped Data, N={len(df)})",
     fontsize=14,
     fontweight="bold",
 )
