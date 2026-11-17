@@ -1,38 +1,3 @@
-import matplotlib.pyplot as plt
-import numpy as np
-from scipy.io import wavfile
-from scipy.signal import spectrogram
-
-sr, y = wavfile.read("live_yesno.wav")
-
-# Convert stereo to mono and normalize to [-1, 1] if needed
-if y.ndim > 1:
-    y = y.mean(axis=1)
-y = y / np.max(np.abs(y))
-
-time = np.linspace(0, len(y) / sr, num=len(y))
-
-fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 6), sharex=True)
-
-# 1. Raw Waveform
-ax1.plot(time, y, linewidth=0.6)
-ax1.set_title("Raw Waveform")
-ax1.set_ylabel("Amplitude")
-ax1.grid(True, alpha=0.3)
-
-# 2. Spectrogram
-f, t, Sxx = spectrogram(y, fs=sr, nperseg=512, noverlap=384)
-ax2.pcolormesh(t, f, 10 * np.log10(Sxx + 1e-10), shading="gouraud", cmap="nipy_spectral")
-ax2.set_title("Spectrogram")
-ax2.set_ylabel("Frequency (Hz)")
-ax2.set_xlabel("Time (s)")
-ax2.set_ylim(0, 5000)
-
-plt.tight_layout()
-plt.show()
-
-#--
-
 import librosa
 import librosa.display
 import matplotlib.pyplot as plt
@@ -52,7 +17,13 @@ hop_length = 32
 S = np.abs(librosa.stft(y_pre, n_fft=n_fft, win_length=win_length, hop_length=hop_length))
 S_db = librosa.amplitude_to_db(S, ref=np.max)
 
-# 3. Extract Formant Frequencies via LPC
+# 3. Extract Pitch (F0) using pYIN on the raw (un-preemphasized) signal
+f0, voiced_flag, voiced_probs = librosa.pyin(
+    y, fmin=librosa.note_to_hz("C2"), fmax=librosa.note_to_hz("C6"), sr=sr, hop_length=hop_length
+)
+f0_times = librosa.times_like(f0, sr=sr, hop_length=hop_length)
+
+# 4. Extract Formant Frequencies via LPC
 def get_formants(signal, sr, frame_length=256, hop_length=32, order=12):
     frames = librosa.util.frame(signal, frame_length=frame_length, hop_length=hop_length)
     times = librosa.frames_to_time(np.arange(frames.shape[1]), sr=sr, hop_length=hop_length)
@@ -81,19 +52,20 @@ def get_formants(signal, sr, frame_length=256, hop_length=32, order=12):
 
 times, f1, f2 = get_formants(y_pre, sr, frame_length=256, hop_length=hop_length, order=12)
 
-# 4. Plot Zoomed-In 0–2000 Hz Spectrogram (Loud = White) + Tracked Formants
-fig, ax = plt.subplots(figsize=(10, 3.5))
+# 5. Plot 0–4,000 Hz Spectrogram (Loud = White) + Pitch (F0) + Formants (F1, F2)
+fig, ax = plt.subplots(figsize=(10, 4))
 img = librosa.display.specshow(
     S_db, sr=sr, hop_length=hop_length, x_axis="time", y_axis="hz", ax=ax, cmap="gray"
 )
 
-# Overlay F1 and F2 tracks with high-contrast colors
-ax.plot(times, f1, "o", color="#ff3b30", markersize=4, label="F1 (Tongue Height)")
-ax.plot(times, f2, "o", color="#00e5ff", markersize=4, label="F2 (Tongue Frontness)")
+# Overlay F0 (Pitch), F1, and F2 as dashed lines
+ax.plot(f0_times, f0, "--", color="#00e5ff", linewidth=1.8, label="F0 (Pitch)")
+ax.plot(times, f1, "--", color="#00e676", linewidth=1.8, label="F1 (Tongue Height)")
+ax.plot(times, f2, "--", color="#ff3b30", linewidth=1.8, label="F2 (Tongue Frontness)")
 
-ax.set_ylim(0, 2000)  # Expanded to 2,000 Hz to capture F2's up-down trajectory
-ax.set_yticks(np.arange(0, 2001, 250))  # Clean 250 Hz gridlines for reading trajectories
-ax.set_title("Formant Tracking (0–2,000 Hz)")
+ax.set_ylim(0, 2200)
+ax.set_yticks(np.arange(0, 2201, 500))
+ax.set_title("Pitch (F0) & Formant Tracking (0–2200 Hz)")
 ax.set_ylabel("Frequency (Hz)")
 ax.set_xlabel("Time (s)")
 ax.legend(loc="upper right")
