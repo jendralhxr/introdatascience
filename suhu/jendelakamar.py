@@ -48,9 +48,8 @@ def tentukan_keputusan(row):
 
 df["keputusan"] = df.apply(tentukan_keputusan, axis=1)
 
-# Tambahkan sedikit variasi realistis (5% noise) agar pohon keputusan belajar pola alami
-np.random.seed(42)
-noise_idx = np.random.choice(df.index, size=int(0.05 * len(df)), replace=False)
+# Tambahkan sedikit variasi realistis (10% noise) agar pohon keputusan belajar pola alami
+noise_idx = np.random.choice(df.index, size=int(0.10 * len(df)), replace=False)
 df.loc[noise_idx, "keputusan"] = np.random.choice(
     ["1. Buka Jendela", "2. Tutup Jendela + AC", "3. Ngafe"],
     size=len(noise_idx),
@@ -89,3 +88,54 @@ plt.title(
 )
 plt.tight_layout()
 plt.show()
+
+from datetime import datetime
+
+
+def prediksi_keputusan(
+    suhu_c: float,
+    hujan_mm: float,
+    jam: int = None,
+    kelembapan_persen: float = None,
+):
+  """
+    Predicts the room decision based on manual temperature and precipitation inputs.
+    Uses current hour and dataset median humidity as defaults if not provided.
+    """
+  # Default to current hour (WIB) if not manually passed
+  if jam is None:
+    jam = datetime.now().hour
+
+  # Default to dataset median humidity if not manually passed
+  if kelembapan_persen is None:
+    kelembapan_persen = df["kelembapan_persen"].median()
+
+  # Format input as a DataFrame with matching feature names to avoid sklearn warnings
+  input_data = pd.DataFrame([{
+      "jam": jam,
+      "suhu_c": suhu_c,
+      "kelembapan_persen": kelembapan_persen,
+      "hujan_mm": hujan_mm,
+  }])
+
+  prediksi = model.predict(input_data)[0]
+  return prediksi
+
+
+# --- Contoh Penggunaan / Manual Input ---
+if __name__ == "__main__":
+  try:
+    print("\n--- Cek Keputusan Kamar Kos ---")
+    input_suhu = float(input("Masukkan suhu saat ini (°C): "))
+    input_hujan = float(
+        input("Masukkan curah hujan (mm, ketik 0 jika tidak hujan): ")
+    )
+
+    # Optional: you can also pass jam=14 explicitly to test the 'Ngafe' condition
+    hasil = prediksi_keputusan(suhu_c=input_suhu, hujan_mm=input_hujan)
+    print(f"\nKeputusan: {hasil}")
+
+  except ValueError:
+    print("Input tidak valid. Harap masukkan angka.")
+    
+    
