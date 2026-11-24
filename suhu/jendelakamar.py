@@ -139,3 +139,73 @@ if __name__ == "__main__":
     print("Input tidak valid. Harap masukkan angka.")
     
     
+    
+    #--
+    
+import matplotlib.dates as mdates
+import matplotlib.pyplot as plt
+
+fig, ax1 = plt.subplots(figsize=(15, 6))
+
+# 1. Axis Utama (Kiri): Suhu (°C)
+color_suhu = "tab:red"
+ax1.set_xlabel("Waktu (WIB)")
+ax1.set_ylabel("Suhu (°C)", color=color_suhu, fontweight="bold")
+line1 = ax1.plot(
+    df["waktu"],
+    df["suhu_c"],
+    color=color_suhu,
+    linewidth=1.8,
+    label="Suhu (°C)",
+)
+ax1.tick_params(axis="y", labelcolor=color_suhu)
+ax1.grid(True, linestyle="--", alpha=0.4)
+
+# 2. Axis Kedua (Kanan): Kelembapan (%)
+ax2 = ax1.twinx()
+color_lembap = "tab:blue"
+ax2.set_ylabel("Kelembapan (%)", color=color_lembap, fontweight="bold")
+line2 = ax2.plot(
+    df["waktu"],
+    df["kelembapan_persen"],
+    color=color_lembap,
+    linewidth=1.5,
+    alpha=0.8,
+    label="Kelembapan (%)",
+)
+ax2.tick_params(axis="y", labelcolor=color_lembap)
+
+# 3. Axis Ketiga (Kanan Digeser): Curah Hujan (mm)
+ax3 = ax1.twinx()
+ax3.spines["right"].set_position(("outward", 60))  # Geser axis ke kanan agar tidak bertumpuk
+color_hujan = "tab:cyan"
+ax3.set_ylabel("Curah Hujan (mm)", color="teal", fontweight="bold")
+bars = ax3.bar(
+    df["waktu"],
+    df["hujan_mm"],
+    color=color_hujan,
+    width=0.04,
+    alpha=0.6,
+    label="Hujan (mm)",
+)
+ax3.tick_params(axis="y", labelcolor="teal")
+ax3.set_ylim(0, max(df["hujan_mm"].max() * 1.2, 5))  # Jaga skala tetap rapi saat hujan 0 mm
+
+# Format tanggal di sumbu X
+ax1.xaxis.set_major_formatter(mdates.DateFormatter("%d %b"))
+ax1.xaxis.set_major_locator(mdates.DayLocator(interval=2))
+
+# Gabungkan semua legenda menjadi satu kotak
+lines = line1 + line2 + [bars]
+labels = [l.get_label() for l in lines]
+ax1.legend(lines, labels, loc="upper left", frameon=True)
+
+plt.title(
+    "Data Cuaca Surabaya per Jam: Suhu, Kelembapan, dan Curah Hujan",
+    fontsize=14,
+    fontweight="bold",
+    pad=15,
+)
+fig.tight_layout()
+plt.show()
+    
