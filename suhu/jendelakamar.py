@@ -39,10 +39,10 @@ def tentukan_keputusan(row):
   elif (
       row["hujan_mm"] > 0
       or row["suhu_c"] < 32.5
-      or not (11 <= row["jam"] <= 17)
+      or not (18 <= row["jam"] <= 24)
   ):
     return "2. Tutup Jendela + AC"
-  # 3. Ngafe: Sisa kondisi (Suhu >= 32.5°C, tidak hujan, dan jam 11.00 - 17.00 WIB)
+  # 3. Ngafe: Sisa kondisi (Suhu >= 32.5°C, tidak hujan, dan jam 18.00 - 24.00 WIB)
   else:
     return "3. Ngafe"
 
